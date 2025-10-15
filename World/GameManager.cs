@@ -55,4 +55,12 @@ public class GameManager : MonoBehaviour
         Debug.Log("Haciendo clic en el boton de reiniciar.");
     }
     
+    // Metodo para volver al menu principal
+    public void GoToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu"); 
+
+        Debug.Log("Volviendo al menú principal.");
+    }
 }
