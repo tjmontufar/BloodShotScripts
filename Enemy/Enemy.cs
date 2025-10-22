@@ -28,6 +28,12 @@ public class Enemy : MonoBehaviour
     public float waypointTolerance = 1f;
     private int currentPatrolIndex;
 
+    // Efectos de daño
+    public float flashDuration = 0.1f;
+    public Color damangeColor = new Color(1f, 0f, 0f, 0.5f);
+    private Color originalColor;
+    private Renderer enemyRenderer;
+
     void Start()
     {
         navMeshAgent = GetComponent<NavMeshAgent>();
@@ -40,6 +46,18 @@ public class Enemy : MonoBehaviour
         // Logica del patrullaje
         currentPatrolIndex = 0;
         navMeshAgent.speed = patrolSpeed;
+
+        enemyRenderer = GetComponentInChildren<Renderer>();
+
+        if (enemyRenderer != null)
+        {
+            originalColor = enemyRenderer.material.color;
+        }
+        else
+        {
+
+        }
+
     }
 
     void Update()
@@ -157,6 +175,21 @@ public class Enemy : MonoBehaviour
     public void LoseEnemyHealth(int healthToReduce)
     {
         health -= healthToReduce;
+
+        if (enemyRenderer != null)
+        {
+            StartCoroutine(FlashDamangeEffect());
+        }
+    }
+
+    // Corotuine para efecto de paradeo rojo al recibir daño
+    private IEnumerator FlashDamangeEffect()
+    {
+        enemyRenderer.material.color = damangeColor;
+
+        yield return new WaitForSeconds(flashDuration);
+
+        enemyRenderer.material.color = originalColor;
     }
 
     public bool CheckEnemyHealth()
