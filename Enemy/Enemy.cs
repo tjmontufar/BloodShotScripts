@@ -6,11 +6,6 @@ public class Enemy : MonoBehaviour
 {
     private NavMeshAgent navMeshAgent;
 
-    // Puntos de patrullaje
-    //public GameObject destination1;
-
-    //public GameObject destination2;
-
     private Transform playerTransform;
 
     private Animator animator;
@@ -188,6 +183,8 @@ public class Enemy : MonoBehaviour
         animator.SetBool("IsDead", true);
 
         StartCoroutine(DestroyAfterAnimation());
+
+        GameManager.Instance.EnemyKillCount++;
     }
 
     // Eliminar el enemigo del mapa despues de la animacion de muerte

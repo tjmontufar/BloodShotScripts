@@ -15,6 +15,10 @@ public class GameManager : MonoBehaviour
     // Valor inicial de la salud
     public int health = 100;
 
+    // Contador de enemigos eliminados
+    public Text EnemyKillText;
+    public int EnemyKillCount = 0;
+
     private void Awake()
     {
         Instance = this;
@@ -24,6 +28,7 @@ public class GameManager : MonoBehaviour
     {
         ammoText.text = gunAmmo.ToString();
         healthText.text = health.ToString();
+        EnemyKillText.text = EnemyKillCount.ToString();
     }
 
     // Metodo para perder vida

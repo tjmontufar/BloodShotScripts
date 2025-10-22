@@ -5,6 +5,7 @@ public class MainMenu : MonoBehaviour
 {
     public GameObject mainMenu;
     public GameObject optionsMenu;
+    public GameObject creditsMenu;
 
     public void OpenOptionsPanel()
     {
@@ -15,8 +16,16 @@ public class MainMenu : MonoBehaviour
     public void OpenMainMenuPanel()
     {
         optionsMenu.SetActive(false);
+        creditsMenu.SetActive(false);
         mainMenu.SetActive(true);
         
+    }
+
+    public void OpenCreditsMenuPanel()
+    {
+        mainMenu.SetActive(false);
+        creditsMenu.SetActive(true);
+
     }
 
     public void QuitGame()
