@@ -21,6 +21,8 @@ public class Enemy : MonoBehaviour
 
     // Valor inicial de salud del enemigo
     public int health = 100;
+    private bool isDead = false;
+    private Collider myCollider;
 
     // Variables para establecer patrullaje
     public Transform[] patrolPoints;
@@ -33,6 +35,15 @@ public class Enemy : MonoBehaviour
     public Color damangeColor = new Color(1f, 0f, 0f, 0.5f);
     private Color originalColor;
     private Renderer enemyRenderer;
+
+    void Awake()
+    {
+        myCollider = GetComponent<Collider>();
+        if (myCollider == null)
+        {
+            myCollider = GetComponentInChildren<Collider>();
+        }
+    }
 
     void Start()
     {
@@ -70,12 +81,6 @@ public class Enemy : MonoBehaviour
         else
         {
             Patrol();
-            // El enemigo se detiene
-            // navMeshAgent.isStopped = true;
-            // Ejecutar animaciones de movimiento y desactivar las de ataque
-            // animator.SetBool("IsAttacking", false);
-            // Ejecuta animacion de reposo
-            // animator.SetFloat("XAxis", 0f);
         }
     }
 
@@ -172,9 +177,20 @@ public class Enemy : MonoBehaviour
     }
 
     // Metodo para contrarrestar vida del enemigo
-    public void LoseEnemyHealth(int healthToReduce)
+    public void LoseEnemyHealth(int damange)
     {
-        health -= healthToReduce;
+        if (isDead)
+        {
+            return;
+        }
+
+        health -= damange;
+        Debug.Log("Vida restante del enemigo: " + health);
+
+        if (health <= 0)
+        {
+            Die();
+        }
 
         if (enemyRenderer != null)
         {
@@ -207,6 +223,16 @@ public class Enemy : MonoBehaviour
     // Funcion para animar y eliminar el enemigo si muere
     public void Die()
     {
+        isDead = true;
+        Debug.Log("Enemigo derrotado.");
+
+        if(myCollider != null)
+        {
+            myCollider.enabled = false;
+        }
+
+        GameManager.Instance.EnemyKillCount += 1;
+
         // El enemigo se detiene por completo
         navMeshAgent.isStopped = true;
         isPlayerInRange = false;
@@ -217,7 +243,7 @@ public class Enemy : MonoBehaviour
 
         StartCoroutine(DestroyAfterAnimation());
 
-        GameManager.Instance.EnemyKillCount++;
+        
     }
 
     // Eliminar el enemigo del mapa despues de la animacion de muerte

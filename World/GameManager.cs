@@ -19,6 +19,18 @@ public class GameManager : MonoBehaviour
     public Text EnemyKillText;
     public int EnemyKillCount = 0;
 
+    // Contador de cristales recogidos
+    public Text CrystalText;
+    public int CrystalCount = 0;
+
+    // Variables para los objetivos del nivel (se ajustan en las escenas)
+    public int EnemyKillChallenge = 0;
+    public int CrystalCollectChallenge = 0;
+    private bool challengesCompleted = false;
+
+    // Llamar el Script para manejo del descenso del helicoptero al lograr las metas
+    public HelicopterEscape helicopterScript;
+
     private void Awake()
     {
         Instance = this;
@@ -29,6 +41,9 @@ public class GameManager : MonoBehaviour
         ammoText.text = gunAmmo.ToString();
         healthText.text = health.ToString();
         EnemyKillText.text = EnemyKillCount.ToString();
+        CrystalText.text = CrystalCount.ToString();
+
+        CheckChallenges();
     }
 
     // Metodo para perder vida
@@ -67,5 +82,32 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene("MainMenu"); 
 
         Debug.Log("Volviendo al menú principal.");
+    }
+
+    // Metodo para verificar si se han cumplido las metas
+    public void CheckChallenges()
+    {
+        if (challengesCompleted)
+        {
+            return;
+        }
+
+        if(EnemyKillCount >= EnemyKillChallenge && CrystalCount >= CrystalCollectChallenge)
+        {
+            challengesCompleted = true;
+
+            Debug.Log("Cumpliste la meta. (Avanza el siguiente nivel)");
+
+            if (helicopterScript != null)
+            {
+                helicopterScript.StartDescent();
+            }
+        }
+    }
+
+    // Metodo para terminar el nivel
+    public void LevelComplete()
+    {
+        Debug.Log("GANASTE! Escapando del mapa.");
     }
 }

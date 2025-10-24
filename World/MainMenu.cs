@@ -35,6 +35,6 @@ public class MainMenu : MonoBehaviour
 
     public void PlayGame()
     {
-        SceneManager.LoadScene("Nivel_1");
+        LoadingScreenManager.LoadScene("Nivel_1");
     }
 }

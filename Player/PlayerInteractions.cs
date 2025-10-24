@@ -14,8 +14,26 @@ public class PlayerInteractions : MonoBehaviour
             Destroy(other.gameObject);
         }
 
+        // Comprobar si el jugador colisiona con una caja de salud
+        if(other.gameObject.CompareTag("HealthBox"))
+        {
+            // Sumar salud
+            GameManager.Instance.health += other.gameObject.GetComponent<HealthBox>().recoverHealth;
+
+            Destroy(other.gameObject);
+        }
+
+        // Comprobar si el jugador colisiona con un crystal
+        if (other.gameObject.CompareTag("Crystal"))
+        {
+            // Sumar el valor de cristal a 1
+            GameManager.Instance.CrystalCount += 1;
+
+            Destroy(other.gameObject);
+        }
+
         // Comprobar si el jugador cayo al suelo de muerte
-        if(other.gameObject.CompareTag("DeathFloor"))
+        if (other.gameObject.CompareTag("DeathFloor"))
         {
             // Perder vida, respawnear nuestro jugador
             GameManager.Instance.LoseHealth(50);
@@ -25,6 +43,12 @@ public class PlayerInteractions : MonoBehaviour
             gameObject.transform.position = startPosition.position;
 
             GetComponent<CharacterController>().enabled = true;
+        }
+
+        if (other.gameObject.CompareTag("Helicopter"))
+        {
+            Debug.Log("Tocando helicoptero. ¡Nivel Completo!");
+            GameManager.Instance.LevelComplete();
         }
     }
 }
