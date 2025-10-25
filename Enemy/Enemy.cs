@@ -10,6 +10,9 @@ public class Enemy : MonoBehaviour
 
     private Animator animator;
 
+    // Daño que el enemigo hace al jugador
+    public int enemyPowerDamange = 10;
+
     // Distancia para que el enemigo comience a atacar
     public float attackRange = 5.0f;
 
@@ -152,7 +155,7 @@ public class Enemy : MonoBehaviour
         if (Time.time > lastAttackTime + attackCoolDown)
         {
             Debug.Log("El enemigo ataca al jugador");
-            GameManager.Instance.LoseHealth(10);
+            GameManager.Instance.LoseHealth(enemyPowerDamange);
             lastAttackTime = Time.time;
         }
     }

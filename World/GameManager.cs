@@ -58,30 +58,18 @@ public class GameManager : MonoBehaviour
     {
         if (health <= 0)
         {
+            // Guardar el nombre de la escena que el jugador se encontraba actualmente
+            string currentSceneName = SceneManager.GetActiveScene().name;
+            PlayerPrefs.SetString("LastPlayedScene", currentSceneName);
+            PlayerPrefs.Save();
+
             Debug.Log("GAME OVER.");
 
-            RestartLevel();
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("GameOverScene");
+
+            //RestartLevel();
         }
-    }
-
-    // Metodo para reiniciar el nivel al presionar el boton
-    public void RestartLevel()
-    {
-        Time.timeScale = 1f;
-        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
-
-        SceneManager.LoadScene(currentSceneIndex);
-
-        Debug.Log("Haciendo clic en el boton de reiniciar.");
-    }
-    
-    // Metodo para volver al menu principal
-    public void GoToMainMenu()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene("MainMenu"); 
-
-        Debug.Log("Volviendo al menú principal.");
     }
 
     // Metodo para verificar si se han cumplido las metas
