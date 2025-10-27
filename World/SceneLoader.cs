@@ -23,6 +23,13 @@ public class SceneLoader : MonoBehaviour
         Debug.Log("Escena cargada al reiniciar nivel: " + lastScene);
     }
 
+    // Metodo para reiniciar el juego hasta el primer nivel
+    public void RestartGame()
+    {
+        Time.timeScale = 1f;
+        LoadingScreenManager.LoadScene("Nivel_1");
+    }
+
     // Metodo para volver al menu principal
     public void GoToMainMenu()
     {

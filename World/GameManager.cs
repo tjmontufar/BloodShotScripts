@@ -102,5 +102,10 @@ public class GameManager : MonoBehaviour
     public void LevelComplete()
     {
         Debug.Log("GANASTE! Escapando del mapa.");
+
+        PlayerPrefs.SetInt("FinalPlayerScore", CurrentScore);
+        PlayerPrefs.Save();
+
+        LoadingScreenManager.LoadScene("GameVictoryScene");
     }
 }
