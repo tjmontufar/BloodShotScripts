@@ -19,6 +19,10 @@ public class GameManager : MonoBehaviour
     public Text EnemyKillText;
     public int EnemyKillCount = 0;
 
+    // Valor de puntaje por eliminacion de enemigos
+    public Text ScoreText;
+    public int CurrentScore = 0;
+
     // Contador de cristales recogidos
     public Text CrystalText;
     public int CrystalCount = 0;
@@ -42,6 +46,7 @@ public class GameManager : MonoBehaviour
         healthText.text = health.ToString();
         EnemyKillText.text = EnemyKillCount.ToString();
         CrystalText.text = CrystalCount.ToString();
+        ScoreText.text = CurrentScore.ToString();
 
         CheckChallenges();
     }

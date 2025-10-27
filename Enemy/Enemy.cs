@@ -27,6 +27,9 @@ public class Enemy : MonoBehaviour
     private bool isDead = false;
     private Collider myCollider;
 
+    // Puntos por recibir al eliminar el enemigo;
+    public int EnemyKillScore = 0;
+
     // Variables para establecer patrullaje
     public Transform[] patrolPoints;
     public float patrolSpeed = 1.5f;
@@ -235,6 +238,7 @@ public class Enemy : MonoBehaviour
         }
 
         GameManager.Instance.EnemyKillCount += 1;
+        GameManager.Instance.CurrentScore += EnemyKillScore;
 
         // El enemigo se detiene por completo
         navMeshAgent.isStopped = true;
