@@ -9,12 +9,14 @@ public class MainMenu : MonoBehaviour
 
     public void OpenOptionsPanel()
     {
+        ButtonHover.ResetAllHovers();
         mainMenu.SetActive(false);
         optionsMenu.SetActive(true);
         
     }
     public void OpenMainMenuPanel()
     {
+        ButtonHover.ResetAllHovers();
         optionsMenu.SetActive(false);
         creditsMenu.SetActive(false);
         mainMenu.SetActive(true);
@@ -23,6 +25,7 @@ public class MainMenu : MonoBehaviour
 
     public void OpenCreditsMenuPanel()
     {
+        ButtonHover.ResetAllHovers();
         mainMenu.SetActive(false);
         creditsMenu.SetActive(true);
 
