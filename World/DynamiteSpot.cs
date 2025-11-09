@@ -36,9 +36,9 @@ public class DynamiteSpot : MonoBehaviour
     {
         if (playerIsNearby && !isCountingDown)
         {
-            GameManager gameManager = FindObjectOfType<GameManager>();
+            LevelManager levelManager = FindObjectOfType<LevelManager>();
 
-            if (gameManager != null && gameManager.EnemyKillCount >= requiredKills)
+            if (levelManager != null && levelManager.EnemyKillCount >= requiredKills)
             {
                 if (promptUI != null)
                 {
@@ -107,7 +107,7 @@ public class DynamiteSpot : MonoBehaviour
         if (wallToDestroy != null)
         {
             Destroy(wallToDestroy);
-            GameManager.Instance.DynamiteActionCompleted();
+            LevelManager.Instance.DynamiteActionCompleted();
         }
 
         // Eliminar la dinamita despues de detonar

@@ -27,7 +27,7 @@ public class PlayerInteractions : MonoBehaviour
         if (other.gameObject.CompareTag("Crystal"))
         {
             // Sumar el valor de cristal a 1
-            GameManager.Instance.CrystalCount += 1;
+            LevelManager.Instance.CrystalCount += 1;
 
             Destroy(other.gameObject);
         }

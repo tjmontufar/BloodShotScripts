@@ -274,9 +274,9 @@ public class Enemy : MonoBehaviour
             Instantiate(bloodDecalPrefab, spawnPosition, Quaternion.identity);
         }
 
-        GameManager.Instance.EnemyKillCount += 1;
+        LevelManager.Instance.EnemyKillCount += 1;
         GameManager.Instance.CurrentScore += EnemyKillScore;
-        GameManager.Instance.CheckQuestProgression();
+        LevelManager.Instance.CheckQuestProgression();
 
         // El enemigo se detiene por completo
         navMeshAgent.isStopped = true;
