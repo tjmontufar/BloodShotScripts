@@ -35,8 +35,11 @@ public class PlayerMovement : MonoBehaviour
     }
 
     Vector3 velocity;
+
     // Valor de salto
     public float jumpHeight = 3;
+    public float jumpCooldown = 0.5f;
+    private float nextJumpTime = 0f;
 
     void Update()
     {
@@ -71,35 +74,41 @@ public class PlayerMovement : MonoBehaviour
     public void JumpCheck()
     {
         // Programacion del salto
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && Time.time > nextJumpTime)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
+
+            nextJumpTime = Time.time + jumpCooldown;
         }
     }
 
     public void RunCheck()
     {
-        // Tecla CTRL
-        if(Input.GetKeyDown(KeyCode.LeftShift))
-        {
-            isSprinting = !isSprinting;
+        // Capturar el movimiento horizontal/vertical para saber si el jugador realmente se mueve
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
+        bool isMoving = (x != 0 || z != 0);
 
-            if (isSprinting == true)
-            {
-                staminaSlider.UseStamina(staminaUseAmount);
-            }
-            else
-            {
-                staminaSlider.UseStamina(0);
-            }
+        bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && isMoving;
+
+        bool canSprint = staminaSlider.IsStaminaAvailable();
+
+        if (wantsToSprint && canSprint)
+        {
+            isSprinting = true;
+        }
+        else
+        {
+            isSprinting = false;
         }
 
-        if(isSprinting == true)
+        if (isSprinting)
         {
             sprintSpeed = sprintingSpeedMultiplier;
         }
         else
         {
+            // Velocidad normal
             sprintSpeed = 1;
         }
     }

@@ -42,6 +42,8 @@ public class Enemy : MonoBehaviour
     private Color originalColor;
     private Renderer enemyRenderer;
 
+    public GameObject bloodDecalPrefab;
+
     void Awake()
     {
         myCollider = GetComponent<Collider>();
@@ -79,6 +81,12 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
+        // Comprobar si el enemigo ha muerto
+        if (isDead)
+        {
+            return;
+        }
+
         // Cuando el jugador entre en la vision del enemigo, este lo seguira
         if (isPlayerInRange)
         {
@@ -110,6 +118,10 @@ public class Enemy : MonoBehaviour
     // Funcion que verifica si el enemigo llego al destino
     void Patrol()
     {
+        navMeshAgent.speed = patrolSpeed;
+        animator.SetBool("IsAttacking", false);
+        animator.SetFloat("XAxis", 0.75f);
+
         if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < waypointTolerance)
         {
             currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
@@ -118,6 +130,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    // Metodo para perseguir el jugador
     void FollowPlayer()
     {
         if (playerTransform == null) return;
@@ -148,6 +161,26 @@ public class Enemy : MonoBehaviour
     // Metodo para ejecutar ataques
     void AttackPlayer()
     {
+        // Si el enemigo ha muerto, omitir esta funcion
+        if (isDead)
+        {
+            return;
+        }
+
+        // Forzar la rotacion hacia el jugador si no ha completado la transicion de ataque
+        if (playerTransform != null)
+        {
+            // Calcular la dirección hacia el jugador
+            Vector3 lookDirection = playerTransform.position - transform.position;
+            lookDirection.y = 0; // Asegurarse de que el giro es solo horizontal (en el plano Y)
+
+            // Crear la rotación de destino
+            Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
+
+            // Aplicar la rotación INSTANTÁNEAMENTE para que mire al jugador
+            transform.rotation = targetRotation;
+        }
+
         // Detenerse y atacar al jugador
         navMeshAgent.isStopped = true;
 
@@ -158,7 +191,12 @@ public class Enemy : MonoBehaviour
         if (Time.time > lastAttackTime + attackCoolDown)
         {
             Debug.Log("El enemigo ataca al jugador");
-            GameManager.Instance.LoseHealth(enemyPowerDamange);
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.LoseHealth(enemyPowerDamange);
+            }
+
             lastAttackTime = Time.time;
         }
     }
@@ -214,31 +252,31 @@ public class Enemy : MonoBehaviour
         enemyRenderer.material.color = originalColor;
     }
 
-    public bool CheckEnemyHealth()
-    {
-        if(health ==  0)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
     // Funcion para animar y eliminar el enemigo si muere
     public void Die()
     {
         isDead = true;
         Debug.Log("Enemigo derrotado.");
 
-        if(myCollider != null)
+        StopAllCoroutines();
+
+        if (myCollider != null)
         {
             myCollider.enabled = false;
         }
 
+        // Colocar una calcomania para charco de sangre
+        if (bloodDecalPrefab != null)
+        {
+            Vector3 spawnPosition = transform.position;
+            spawnPosition.y += 0.05f;
+
+            Instantiate(bloodDecalPrefab, spawnPosition, Quaternion.identity);
+        }
+
         GameManager.Instance.EnemyKillCount += 1;
         GameManager.Instance.CurrentScore += EnemyKillScore;
+        GameManager.Instance.CheckQuestProgression();
 
         // El enemigo se detiene por completo
         navMeshAgent.isStopped = true;

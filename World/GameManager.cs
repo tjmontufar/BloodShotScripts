@@ -32,6 +32,21 @@ public class GameManager : MonoBehaviour
     public int CrystalCollectChallenge = 0;
     private bool challengesCompleted = false;
 
+    // Textos en pantalla para mostrar los objetivos que el jugador debe realizar
+    public GameObject Quest1Text;
+    public GameObject Quest2Text;
+    public GameObject Quest3Text;
+
+    private int currentQuestIndex = 0;
+
+    private bool dynamiteUsed = false;
+
+    // Variables para el temporizador de escape
+    public Text timerText;
+    public float maxEscapeTime = 60f;
+    private float currentEscapeTime;
+    private bool isTimerRunning = false;
+
     // Llamar el Script para manejo del descenso del helicoptero al lograr las metas
     public HelicopterEscape helicopterScript;
 
@@ -44,11 +59,26 @@ public class GameManager : MonoBehaviour
     {
         ammoText.text = gunAmmo.ToString();
         healthText.text = health.ToString();
-        EnemyKillText.text = EnemyKillCount.ToString();
-        CrystalText.text = CrystalCount.ToString();
+        EnemyKillText.text = EnemyKillCount.ToString() + " / " + EnemyKillChallenge.ToString();
+        CrystalText.text = CrystalCount.ToString() + " / " + CrystalCollectChallenge.ToString();
         ScoreText.text = CurrentScore.ToString();
 
         CheckChallenges();
+        CheckQuestProgression();
+
+        if(isTimerRunning)
+        {
+            currentEscapeTime -= Time.deltaTime;
+
+            DisplayTime(currentEscapeTime);
+
+            if(currentEscapeTime <= 0)
+            {
+                currentEscapeTime = 0;
+                isTimerRunning = false;
+                GameOverByTimeOut();
+            }
+        }
     }
 
     // Metodo para perder vida
@@ -74,6 +104,52 @@ public class GameManager : MonoBehaviour
             SceneManager.LoadScene("GameOverScene");
 
             //RestartLevel();
+        }
+    }
+
+    // Metodo para mostrar tareas por cumplir en pantalla
+    public void CheckQuestProgression()
+    {
+        switch (currentQuestIndex)
+        {
+            case 0:
+                Quest1Text.SetActive(true);
+                // Mision 1: Matar enemigos
+                if (EnemyKillCount >= EnemyKillChallenge)
+                {
+                    Quest1Text.SetActive(false);
+                    currentQuestIndex++;
+                    CheckQuestProgression();
+                }
+                break;
+            case 1:
+                // Mision 2: Usar la dinamita y recoger los cristales
+                Quest2Text.SetActive(true);
+
+                if(CrystalCount >= CrystalCollectChallenge && dynamiteUsed)
+                {
+                    Quest2Text.SetActive(false);
+                    currentQuestIndex++;
+                    CheckQuestProgression();
+
+                    currentEscapeTime = maxEscapeTime;
+                    isTimerRunning = true;
+                    timerText.gameObject.SetActive(true);
+                }
+                break;
+            case 2:
+                Quest3Text.SetActive(true);
+                break;
+        }
+    }
+
+    // Metodo para comprobar que haya detonado la dinamita
+    public void DynamiteActionCompleted()
+    {
+        if (!dynamiteUsed)
+        {
+            dynamiteUsed = true;
+            CheckQuestProgression();
         }
     }
 
@@ -107,5 +183,31 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.Save();
 
         LoadingScreenManager.LoadScene("GameVictoryScene");
+    }
+
+    // Metodo para formatear y mostrar el tiempo
+    void DisplayTime(float timeToDisplay)
+    {
+        // Asegura que no se muestren números negativos
+        if (timeToDisplay < 0)
+        {
+            timeToDisplay = 0;
+        }
+
+        // Calcula los minutos y segundos (formato MM:SS)
+        float minutes = Mathf.FloorToInt(timeToDisplay / 60);
+        float seconds = Mathf.FloorToInt(timeToDisplay % 60);
+
+        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+    }
+
+    // Metodo para cargar pantalla de Game Over si el tiempo se ha agotado
+    void GameOverByTimeOut()
+    {
+        Debug.Log("¡Tiempo agotado!");
+
+        Time.timeScale = 0f;
+
+        SceneManager.LoadScene("GameOverScene");
     }
 }
