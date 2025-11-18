@@ -32,6 +32,8 @@ public class PlayerMovement : MonoBehaviour
     [Header("Mobile Controls")]
     public GameObject mobileControls;
     public VirtualJoystick virtualJoystick;
+    public TouchButton jumpButton;
+    public bool forceMobileControlsInEditor = false; // Nuevo checkbox para pruebas en el editor
     // ====================================
 
     // Inicializar la barra de stamina
@@ -40,11 +42,14 @@ public class PlayerMovement : MonoBehaviour
         // FindObjectOfType (original)
         staminaSlider = FindFirstObjectByType<StaminaBar>();
 
+        bool activateMobile = false;
+
 #if UNITY_ANDROID || UNITY_IOS
-        mobileControls.SetActive(true);
-#else
-        mobileControls.SetActive(false);
+        activateMobile = true;
+#elif UNITY_EDITOR
+        activateMobile = forceMobileControlsInEditor;
 #endif
+        mobileControls.SetActive(activateMobile);
     }
 
     Vector3 velocity;
@@ -71,6 +76,18 @@ public class PlayerMovement : MonoBehaviour
         // Capturar los valores del joystick virtual para desplazar el personaje
         x = virtualJoystick.direction.x;
         z = virtualJoystick.direction.y;
+#elif UNITY_EDITOR
+        if (forceMobileControlsInEditor)
+        {
+            x = virtualJoystick.direction.x;
+            z = virtualJoystick.direction.y;
+        }
+        else
+        {
+            // Capturar los botones de teclado para desplazar el personaje (WASD o las flechas)
+            x = Input.GetAxis("Horizontal");
+            z = Input.GetAxis("Vertical");
+        }
 #else
         // Capturar los botones de teclado para desplazar el personaje (WASD o las flechas)
         x = Input.GetAxis("Horizontal");
