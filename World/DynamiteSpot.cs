@@ -19,6 +19,10 @@ public class DynamiteSpot : MonoBehaviour
     private bool playerIsNearby = false;
     private bool isCountingDown = false;
 
+    [Header("Sonido")]
+    public AudioClip explosionAudioClip;
+    //public AudioSource audioSource;
+
     void Start()
     {
         if (hiddenCrystals != null)
@@ -103,11 +107,30 @@ public class DynamiteSpot : MonoBehaviour
 
         yield return new WaitForSeconds(timeToExplode);
 
+        // Reproducir sonido de explosion
+        if (explosionAudioClip != null)
+        {
+            // GameObject temporal para el sonido
+            GameObject audioObject = new GameObject("ExplosionSound");
+            audioObject.transform.position = transform.position;
+
+            AudioSource tempAudioSource = audioObject.AddComponent<AudioSource>();
+            tempAudioSource.clip = explosionAudioClip;
+            tempAudioSource.outputAudioMixerGroup = null;
+            tempAudioSource.volume = 1f;
+
+            tempAudioSource.Play();
+
+            Destroy(audioObject, explosionAudioClip.length);
+        }
+
         // Destruir la pared
         if (wallToDestroy != null)
         {
             Destroy(wallToDestroy);
-            LevelManager.Instance.DynamiteActionCompleted();
+
+            Debug.Log("Destruyendo pared.");
+            QuestManager.Instance.DynamiteActionCompleted();
         }
 
         // Eliminar la dinamita despues de detonar

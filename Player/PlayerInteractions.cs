@@ -1,8 +1,13 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class PlayerInteractions : MonoBehaviour
 {
     public Transform startPosition;
+
+    public AudioClip ammoAudioClip;
+    public AudioClip healthAudioClip;
+    public AudioSource audioSource;
     private void OnTriggerEnter(Collider other)
     {
         // Comprobar si el jugador colisiona con una caja de municion
@@ -10,7 +15,13 @@ public class PlayerInteractions : MonoBehaviour
         {
             // Sumar municion luego de colisionar con la caja
             GameManager.Instance.gunAmmo += other.gameObject.GetComponent<AmmoBox>().ammo;
-            
+
+            if (ammoAudioClip != null && audioSource != null)
+            {
+                // Reproducir sonido de recarga de municion
+                audioSource.PlayOneShot(ammoAudioClip);
+            }
+
             Destroy(other.gameObject);
         }
 
@@ -18,7 +29,14 @@ public class PlayerInteractions : MonoBehaviour
         if(other.gameObject.CompareTag("HealthBox"))
         {
             // Sumar salud
-            GameManager.Instance.health += other.gameObject.GetComponent<HealthBox>().recoverHealth;
+            //GameManager.Instance.health += other.gameObject.GetComponent<HealthBox>().recoverHealth;
+            GameManager.Instance.GainHealth(other.gameObject.GetComponent<HealthBox>().recoverHealth);
+
+            if (healthAudioClip != null && audioSource != null)
+            {
+                // Reproducir sonido de recarga de municion
+                audioSource.PlayOneShot(healthAudioClip);
+            }
 
             Destroy(other.gameObject);
         }

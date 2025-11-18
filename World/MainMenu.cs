@@ -42,6 +42,10 @@ public class MainMenu : MonoBehaviour
 
     public void PlayGame()
     {
+        // Restablecer los valores de salud y municion
+        PlayerPrefs.SetInt("FinalPlayerScore", 0);
+        PlayerPrefs.Save();
+
         LoadingScreenManager.LoadScene("Nivel_1");
     }
 }

@@ -44,6 +44,10 @@ public class Enemy : MonoBehaviour
 
     public GameObject bloodDecalPrefab;
 
+    public AudioClip dyingAudioClip;
+    public AudioClip attackAudioClip;
+    public AudioSource audioSource;
+
     void Awake()
     {
         myCollider = GetComponent<Collider>();
@@ -192,6 +196,12 @@ public class Enemy : MonoBehaviour
         {
             Debug.Log("El enemigo ataca al jugador");
 
+            if (audioSource != null && attackAudioClip != null)
+            {
+                // Reproducir sonido de ataque
+                audioSource.PlayOneShot(attackAudioClip);
+            }
+
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.LoseHealth(enemyPowerDamange);
@@ -258,6 +268,23 @@ public class Enemy : MonoBehaviour
         isDead = true;
         Debug.Log("Enemigo derrotado.");
 
+        // Si el enemigo murio dentro del rango en que detecta el jugador, mostrar salpicaduras de sangre en pantalla
+        if (playerTransform != null && BloodSplatterManager.Instance != null) 
+        {
+            float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+            if (distanceToPlayer <= attackRange)
+            {
+                BloodSplatterManager.Instance.ShowSplatter();
+            }
+        }
+
+        if (audioSource != null && dyingAudioClip != null)
+        {
+            // Reproducir sonido de grito de agonia
+            audioSource.PlayOneShot(dyingAudioClip);
+        }
+
         StopAllCoroutines();
 
         if (myCollider != null)
@@ -274,9 +301,21 @@ public class Enemy : MonoBehaviour
             Instantiate(bloodDecalPrefab, spawnPosition, Quaternion.identity);
         }
 
-        LevelManager.Instance.EnemyKillCount += 1;
-        GameManager.Instance.CurrentScore += EnemyKillScore;
-        LevelManager.Instance.CheckQuestProgression();
+        if (LevelManager.Instance != null)
+        {
+            LevelManager.Instance.EnemyKillCount += 1;
+        }
+        
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.CurrentScore += EnemyKillScore;
+        }
+        
+        if(QuestManager.Instance != null)
+        {
+            QuestManager.Instance.CheckQuestProgression();
+        }
+        
 
         // El enemigo se detiene por completo
         navMeshAgent.isStopped = true;

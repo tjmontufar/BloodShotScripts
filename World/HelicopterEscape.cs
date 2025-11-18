@@ -6,6 +6,9 @@ public class HelicopterEscape : MonoBehaviour
 
     private Animator animator;
 
+    public AudioClip helicopterAudioClip;
+    public AudioSource audioSource;
+
     void Awake()
     {
         animator = GetComponent<Animator>();
@@ -13,6 +16,14 @@ public class HelicopterEscape : MonoBehaviour
         if (animator == null )
         {
             Debug.LogError("Animator no encontrado en el HelicopteroPadre.");
+        }
+
+        if (audioSource != null && helicopterAudioClip != null)
+        {
+            // Reproducir sonido del helicoptero
+            audioSource.clip = helicopterAudioClip;
+            audioSource.loop = true;
+            audioSource.Play();
         }
     }
 
@@ -33,19 +44,5 @@ public class HelicopterEscape : MonoBehaviour
     {
         isDescending = false;
         Debug.Log("Helicoptero aterrizado.");
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        //if (!isDescending && other.gameObject.CompareTag("Player"))
-        //{
-        //    Debug.Log("Tocando helicoptero. ¡Nivel Completo!");
-        //    GameManager.Instance.LevelComplete();
-        //}
-        //else
-        //{
-        //    Debug.Log("No funciona el trigger.");
-        //}
-        Debug.Log("Trigger disparado. Objeto que entró: " + other.gameObject.name);
     }
 }

@@ -9,6 +9,7 @@ public class PlayerMovement : MonoBehaviour
 
     // Variable para controlar la velocidad de movimiento
     public float speed = 10f;
+    Vector3 moveInAir;
 
     // Variable para almacenar la gravedad
     private float gravity = -9.81f;
@@ -46,7 +47,7 @@ public class PlayerMovement : MonoBehaviour
         // Identificar si el jugador esta tocando el suelo
         isGrounded = Physics.CheckSphere(groundCheck.position, sphereRadius, groundMask);
 
-        if(isGrounded && velocity.y < 0)
+        if (isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
         }
@@ -63,12 +64,22 @@ public class PlayerMovement : MonoBehaviour
         // Llamado del metodo para correr
         RunCheck();
 
-        characterController.Move(move * speed * Time.deltaTime * sprintSpeed);
+        // Si el jugador esta en el aire, moverse de acuerdo a la ultima entrada
+        if (!isGrounded)
+        {
+            characterController.Move(moveInAir * speed * Time.deltaTime * sprintSpeed);
+        }
+        // Caso contrario, obtener la ultima entrada para moverse en el aire, pero el jugador seguira moviendose normalmente en el suelo
+        else
+        {
+            moveInAir = move;
+            characterController.Move(move * speed * Time.deltaTime * sprintSpeed);
+        }
 
         // Aumento de la velocidad de caida si cae desde un punto mas alto.
         velocity.y += gravity * Time.deltaTime;
-
         characterController.Move(velocity * Time.deltaTime);
+
     }
 
     public void JumpCheck()
@@ -77,7 +88,6 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded && Time.time > nextJumpTime)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
-
             nextJumpTime = Time.time + jumpCooldown;
         }
     }
@@ -87,10 +97,9 @@ public class PlayerMovement : MonoBehaviour
         // Capturar el movimiento horizontal/vertical para saber si el jugador realmente se mueve
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
+
         bool isMoving = (x != 0 || z != 0);
-
         bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && isMoving;
-
         bool canSprint = staminaSlider.IsStaminaAvailable();
 
         if (wantsToSprint && canSprint)
@@ -112,4 +121,5 @@ public class PlayerMovement : MonoBehaviour
             sprintSpeed = 1;
         }
     }
+
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class Shot : MonoBehaviour
 {
@@ -8,6 +9,9 @@ public class Shot : MonoBehaviour
     // Varialbes para manejo del disparo
     public float shotForce = 1500f;
     public float shotRate = 0.5f;
+
+    public AudioClip shotAudioClip;
+    public AudioSource shotAudioSource;
 
     private float shotRateTime = 0;
 
@@ -30,6 +34,12 @@ public class Shot : MonoBehaviour
                 newBullet = Instantiate(bullet, spawnPoint.position, spawnPoint.rotation);
                 // Agregar fuerza de disparo
                 newBullet.GetComponent<Rigidbody>().AddForce(spawnPoint.forward * shotForce);
+
+                if (shotAudioSource != null && shotAudioClip != null)
+                {
+                    // Reproducir sonido de disparo
+                    shotAudioSource.PlayOneShot(shotAudioClip);
+                }
                 // Agregar el ratio de disparo
                 shotRateTime = Time.time + shotRate;
                 // Eliminar la bala despues de ser disparada

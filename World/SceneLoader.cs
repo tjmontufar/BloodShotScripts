@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class SceneLoader : MonoBehaviour
 {
+    GameManager gameManager;
     void Start()
     {
         Cursor.visible = true;
@@ -13,20 +14,50 @@ public class SceneLoader : MonoBehaviour
     public void RestartLevel()
     {
         Time.timeScale = 1f;
+        string sceneToLoad = "";
 
-        // Si no se encontro una escena guardada, el Nivel 1 sera la escena predeterminada
-        string lastScene = PlayerPrefs.GetString("LastPlayedScene", "Nivel_1");
+        // Si el jugador murio, cargar la ultima escena antes de morir
+        if(SceneManager.GetActiveScene().name == "GameOverScene")
+        {
+            sceneToLoad = PlayerPrefs.GetString("LastPlayedScene", "MainMenu");
 
-        //SceneManager.LoadScene(lastScene);
-        LoadingScreenManager.LoadScene(lastScene);
+            PlayerPrefs.DeleteKey("LastPlayedScene");
+            PlayerPrefs.Save();
+        }
+        else // Caso contrario, reiniciar el nivel actual
+        {
+            sceneToLoad = SceneManager.GetActiveScene().name;
 
-        Debug.Log("Escena cargada al reiniciar nivel: " + lastScene);
+            // Restablecer los valores de salud y municion
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.ResetGameSession();
+            }
+        }
+
+        LoadingScreenManager.LoadScene(sceneToLoad);
+
+        Debug.Log("Escena cargada al reiniciar nivel: " + sceneToLoad);
     }
 
     // Metodo para reiniciar el juego hasta el primer nivel
     public void RestartGame()
     {
         Time.timeScale = 1f;
+
+        // Restablecer los valores de salud y municion
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ResetGameSession();
+        }
+        else
+        {
+            PlayerPrefs.SetInt("FinalPlayerScore", 0);
+            PlayerPrefs.DeleteKey("LastPlayedScene");
+            PlayerPrefs.DeleteKey("NextSceneToLoad");
+            PlayerPrefs.Save();
+        }
+
         LoadingScreenManager.LoadScene("Nivel_1");
     }
 
@@ -34,8 +65,29 @@ public class SceneLoader : MonoBehaviour
     public void GoToMainMenu()
     {
         Time.timeScale = 1f;
+
+        // Restablecer los valores de salud y municion
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ResetGameSession();
+        }
+        else
+        {
+            PlayerPrefs.SetInt("FinalPlayerScore", 0);
+            PlayerPrefs.DeleteKey("LastPlayedScene");
+            PlayerPrefs.DeleteKey("NextSceneToLoad");
+            PlayerPrefs.Save();
+        }
+
         SceneManager.LoadScene("MainMenu");
 
         Debug.Log("Volviendo al menú principal.");
+    }
+
+    public void NextLevel()
+    {
+        Time.timeScale = 1f;
+        string nextLevel = PlayerPrefs.GetString("NextSceneToLoad", "GameVictoryScene");
+        LoadingScreenManager.LoadScene(nextLevel);
     }
 }

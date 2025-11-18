@@ -19,16 +19,6 @@ public class LevelManager : MonoBehaviour
     public Text CrystalText;
     public int CrystalCount = 0;
 
-    // Textos en pantalla para mostrar los objetivos que el jugador debe realizar
-    [Header("Textos de Mision")]
-    public GameObject Quest1Text;
-    public GameObject Quest2Text;
-    public GameObject Quest3Text;
-
-    private int currentQuestIndex = 0;
-
-    private bool dynamiteUsed = false;
-
     // Variables para los objetivos del nivel (se ajustan en las escenas)
     [Header("Objetivos del Nivel")]
     public int EnemyKillChallenge = 0;
@@ -46,6 +36,9 @@ public class LevelManager : MonoBehaviour
     public float maxEscapeTime = 60f;
     private float currentEscapeTime;
     private bool isTimerRunning = false;
+
+    [Header("Referencias")]
+    public QuestManager questManager;
 
     private void Awake()
     {
@@ -77,7 +70,11 @@ public class LevelManager : MonoBehaviour
         CrystalText.text = CrystalCount.ToString() + " / " + CrystalCollectChallenge.ToString();
 
         CheckChallenges();
-        CheckQuestProgression();
+
+        if (questManager != null)
+        {
+            questManager.CheckQuestProgression();
+        }
 
         if (isTimerRunning)
         {
@@ -94,57 +91,6 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    // Metodo para mostrar tareas por cumplir en pantalla
-    public void CheckQuestProgression()
-    {
-        switch (currentQuestIndex)
-        {
-            case 0:
-                Quest1Text.SetActive(true);
-                // Mision 1: Matar enemigos
-                if (usesEnemyQuest && EnemyKillCount >= EnemyKillChallenge)
-                {
-                    Quest1Text.SetActive(false);
-                    currentQuestIndex++;
-                    CheckQuestProgression();
-                }
-                else if (!usesEnemyQuest)
-                {
-                    Quest1Text.SetActive(false);
-                    currentQuestIndex++;
-                    CheckQuestProgression();
-                }
-                break;
-            case 1:
-                // Mision 2: Usar la dinamita y recoger los cristales
-                Quest2Text.SetActive(true);
-
-                if (usesCrystalQuest && CrystalCount >= CrystalCollectChallenge)
-                {
-                    if(dynamiteUsed)
-                    {
-                        Quest2Text.SetActive(false);
-                        currentQuestIndex++;
-                        CheckQuestProgression();
-
-                        currentEscapeTime = maxEscapeTime;
-                        isTimerRunning = true;
-                        timerText.gameObject.SetActive(true);
-                    }
-                }
-                else if (!usesCrystalQuest) 
-                {
-                    Quest2Text.SetActive(false);
-                    currentQuestIndex++;
-                    CheckQuestProgression();
-                }
-                break;
-            case 2:
-                Quest3Text.SetActive(true);
-                break;
-        }
-    }
-
     // Metodo para verificar si se han cumplido las metas
     public void CheckChallenges()
     {
@@ -153,36 +99,49 @@ public class LevelManager : MonoBehaviour
             return;
         }
 
+        // Si ambas tareas estan activas
         if (usesEnemyQuest && usesCrystalQuest)
         {
+            // Si se cumplen ambas tareas
             if (EnemyKillCount >= EnemyKillChallenge && CrystalCount >= CrystalCollectChallenge)
             {
                 challengesCompleted = true;
 
                 Debug.Log("Cumpliste la meta. (Avanza el siguiente nivel)");
 
-                if (usesHelicopter && helicopterScript != null)
-                {
-                    helicopterScript.StartDescent();
-                }
+                StartDescendHelicopter();
             }
         }
-        else if (!usesEnemyQuest || !usesCrystalQuest)
+        // Si solo esta activa la tarea de eliminar enemigos
+        else if (usesEnemyQuest && !usesCrystalQuest)
         {
-            if (usesHelicopter && helicopterScript != null)
+            // Si se cumple la tarea de eliminar enemigos
+            if (EnemyKillCount >= EnemyKillChallenge)
             {
-                helicopterScript.StartDescent();
+                challengesCompleted = true;
+
+                Debug.Log("Cumpliste la meta. (Avanza el siguiente nivel)");
+
+                StartDescendHelicopter();
             }
         }
-    }
-
-    // Metodo para comprobar que haya detonado la dinamita
-    public void DynamiteActionCompleted()
-    {
-        if (!dynamiteUsed)
+        // Si solo esta activa la tarea de recolectar cristales
+        else if (!usesEnemyQuest && usesCrystalQuest)
         {
-            dynamiteUsed = true;
-            CheckQuestProgression();
+            // Si se cumple la tarea de recoger cristales
+            if (CrystalCount >= CrystalCollectChallenge)
+            {
+                challengesCompleted = true;
+
+                Debug.Log("Cumpliste la meta. (Avanza el siguiente nivel)");
+
+                StartDescendHelicopter();
+            }
+        }
+        // Si ninguna de las tareas esta activa
+        else if (!usesEnemyQuest && !usesCrystalQuest)
+        {
+            StartDescendHelicopter();
         }
     }
 
@@ -210,5 +169,21 @@ public class LevelManager : MonoBehaviour
         Time.timeScale = 0f;
 
         SceneManager.LoadScene("GameOverScene");
+    }
+
+    // Iniciar el tiempo
+    public void StartEscapeTimer()
+    {
+        currentEscapeTime = maxEscapeTime;
+        isTimerRunning = true;
+        timerText.gameObject.SetActive(true);
+    }
+
+    public void StartDescendHelicopter()
+    {
+        if (usesHelicopter && helicopterScript != null)
+        {
+            helicopterScript.StartDescent();
+        }
     }
 }
