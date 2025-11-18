@@ -18,16 +18,23 @@ public class CameraLook : MonoBehaviour
         // Encontrar el script del jugador
         playerMovement = FindObjectOfType<PlayerMovement>();
 
-        bool isMobileForced = false;
+        // Determinar si estamos en un contexto movil
+        bool isMobileContext = Application.isMobilePlatform;
         #if UNITY_EDITOR
-        if (playerMovement != null)
+        if (playerMovement != null && playerMovement.forceMobileControlsInEditor)
         {
-            isMobileForced = playerMovement.forceMobileControlsInEditor;
+            isMobileContext = true;
         }
         #endif
 
-        // Bloquear la posicion del mouse solo en PC
-        if (!Application.isMobilePlatform && !isMobileForced)
+        // Triplicar la sensibilidad tactil si estamos en contexto movil
+        if (isMobileContext)
+        {
+            touchSensitivity *= 3f;
+        }
+
+        // Bloquear la posicion del mouse solo en PC (no en contexto movil)
+        if (!isMobileContext)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -39,16 +46,17 @@ public class CameraLook : MonoBehaviour
         float lookX = 0;
         float lookY = 0;
 
-        bool isMobileForced = false;
+        // Determinar si estamos en un contexto movil
+        bool isMobileContext = Application.isMobilePlatform;
         #if UNITY_EDITOR
-        if (playerMovement != null)
+        if (playerMovement != null && playerMovement.forceMobileControlsInEditor)
         {
-            isMobileForced = playerMovement.forceMobileControlsInEditor;
+            isMobileContext = true;
         }
         #endif
 
         // --- Logica para Movil ---
-        if (Application.isMobilePlatform || isMobileForced)
+        if (isMobileContext)
         {
             // Iterar a traves de todos los toques en la pantalla
             foreach (Touch touch in Input.touches)
