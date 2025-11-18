@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
@@ -32,7 +33,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Mobile Controls")]
     public GameObject mobileControls;
     public VirtualJoystick virtualJoystick;
-    public TouchButton jumpButton;
+    public Button jumpButton;
     public bool forceMobileControlsInEditor = false; // Nuevo checkbox para pruebas en el editor
     // ====================================
 
@@ -138,6 +139,23 @@ public class PlayerMovement : MonoBehaviour
         {
             PerformJump();
         }
+#elif UNITY_EDITOR
+        if (forceMobileControlsInEditor)
+        {
+            // En movil, el salto se maneja a traves del boton de UI que llama a PerformJump()
+            jumpButton.onButtonPressed += PerformJump;
+        }
+        else
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                PerformJump();
+            }
+        }
+#else
+        // En movil, el salto se maneja a traves del boton de UI que llama a PerformJump()
+        jumpButton.onButtonPressed += PerformJump;
+        
 #endif
     }
 
