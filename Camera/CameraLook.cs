@@ -1,41 +1,33 @@
 using UnityEngine;
-using UnityEngine.EventSystems; // Requerido para ignorar toques en la UI
+using UnityEngine.EventSystems;
+using System.Collections.Generic; // Requerido para usar List<T>
 
 public class CameraLook : MonoBehaviour
 {
     [Header("Sensibilidad")]
     public float mouseSensitivity = 80f;
-    public float touchSensitivity = 0.5f; // Sensibilidad para el control tactil
+    public float touchSensitivity = 0.5f;
 
     [Header("Referencias")]
     public Transform playerBody;
 
     private float xRotation = 0;
-    private PlayerMovement playerMovement; // Referencia para saber si forzamos el modo movil
+    private PlayerMovement playerMovement;
+
+    // Lista para almacenar los IDs de los toques que debemos ignorar (porque empezaron sobre la UI)
+    private List<int> ignoredFingerIds = new List<int>();
 
     void Start()
     {
-        // Encontrar el script del jugador
         playerMovement = FindObjectOfType<PlayerMovement>();
-
-        bool isMobileForced = false;
-        #if UNITY_EDITOR
-        if (playerMovement != null)
-        {
-            isMobileForced = playerMovement.forceMobileControlsInEditor;
-        }
-        #endif
-
-        // Bloquear la posicion del mouse solo en PC
-        if (!Application.isMobilePlatform && !isMobileForced)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+        UpdateCursorLock();
     }
 
     void Update()
     {
+        // Si el juego esta pausado, no procesar nada.
+        if (Time.timeScale == 0f) return;
+
         float lookX = 0;
         float lookY = 0;
 
@@ -47,29 +39,47 @@ public class CameraLook : MonoBehaviour
         }
         #endif
 
-        // --- Logica para Movil ---
         if (Application.isMobilePlatform || isMobileForced)
         {
-            // Iterar a traves de todos los toques en la pantalla
+            // --- Logica de Toques Avanzada ---
             foreach (Touch touch in Input.touches)
             {
-                // Si el toque NO esta sobre un elemento de la UI (joystick, boton, etc.)
-                if (!EventSystem.current.IsPointerOverGameObject(touch.fingerId))
+                // FASE 1: Deteccion de nuevos toques
+                if (touch.phase == TouchPhase.Began)
                 {
-                    // Si el dedo se esta moviendo, ese es nuestro toque para mirar
-                    if (touch.phase == TouchPhase.Moved)
+                    // Si el toque empieza sobre la UI, lo añadimos a la lista de ignorados.
+                    if (EventSystem.current.IsPointerOverGameObject(touch.fingerId))
                     {
-                        lookX = touch.deltaPosition.x * touchSensitivity * Time.deltaTime;
-                        lookY = touch.deltaPosition.y * touchSensitivity * Time.deltaTime;
-                        // Rompemos el bucle porque ya encontramos el toque para mirar
-                        break;
+                        ignoredFingerIds.Add(touch.fingerId);
+                    }
+                }
+
+                // FASE 2: Procesar movimiento
+                // Si el dedo se mueve Y su ID no esta en la lista de ignorados.
+                if (touch.phase == TouchPhase.Moved && !ignoredFingerIds.Contains(touch.fingerId))
+                {
+                    lookX = touch.deltaPosition.x * touchSensitivity * Time.deltaTime;
+                    lookY = touch.deltaPosition.y * touchSensitivity * Time.deltaTime;
+                    // Rompemos el bucle, ya que solo un dedo debe controlar la camara a la vez.
+                    break;
+                }
+
+                // FASE 3: Limpieza
+                // Si el dedo se levanta, lo quitamos de la lista de ignorados para liberar la memoria.
+                if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                {
+                    if (ignoredFingerIds.Contains(touch.fingerId))
+                    {
+                        ignoredFingerIds.Remove(touch.fingerId);
                     }
                 }
             }
         }
-        // --- Logica para PC ---
         else
         {
+            // --- Logica para PC ---
+            // Solo actualizamos el estado del cursor si no estamos en modo movil
+            UpdateCursorLock();
             lookX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
             lookY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
         }
@@ -80,5 +90,20 @@ public class CameraLook : MonoBehaviour
 
         transform.localRotation = Quaternion.Euler(xRotation, 0, 0);
         playerBody.Rotate(Vector3.up * lookX);
+    }
+    
+    // Metodo para manejar el bloqueo del cursor
+    void UpdateCursorLock()
+    {
+        if (Time.timeScale > 0f) // Si no estamos en pausa
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else // Estamos en pausa
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 }
