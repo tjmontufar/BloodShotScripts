@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.UI; // Asegurarse de que este 'using' este presente
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -26,6 +26,9 @@ public class PlayerMovement : MonoBehaviour
     public float sprintingSpeedMultiplier = 1.5f;
     private float sprintSpeed = 1;
 
+    // ======== Variable para el boton de Correr (movil) ========
+    [HideInInspector] public bool isSprintingButtonPressed = false;
+
     public float staminaUseAmount = 5;
     private StaminaBar staminaSlider;
 
@@ -33,18 +36,15 @@ public class PlayerMovement : MonoBehaviour
     [Header("Mobile Controls")]
     public GameObject mobileControls;
     public VirtualJoystick virtualJoystick;
-    public Button jumpButton;
-    public bool forceMobileControlsInEditor = false; // Nuevo checkbox para pruebas en el editor
+    public bool forceMobileControlsInEditor = false;
     // ====================================
 
     // Inicializar la barra de stamina
     private void Start()
     {
-        // FindObjectOfType (original)
         staminaSlider = FindFirstObjectByType<StaminaBar>();
 
         bool activateMobile = false;
-
 #if UNITY_ANDROID || UNITY_IOS
         activateMobile = true;
 #elif UNITY_EDITOR
@@ -62,7 +62,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // Identificar si el jugador esta tocando el suelo
         isGrounded = Physics.CheckSphere(groundCheck.position, sphereRadius, groundMask);
 
         if (isGrounded && velocity.y < 0)
@@ -74,7 +73,6 @@ public class PlayerMovement : MonoBehaviour
         float z;
 
 #if UNITY_ANDROID || UNITY_IOS
-        // Capturar los valores del joystick virtual para desplazar el personaje
         x = virtualJoystick.direction.x;
         z = virtualJoystick.direction.y;
 #elif UNITY_EDITOR
@@ -85,43 +83,33 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            // Capturar los botones de teclado para desplazar el personaje (WASD o las flechas)
             x = Input.GetAxis("Horizontal");
             z = Input.GetAxis("Vertical");
         }
 #else
-        // Capturar los botones de teclado para desplazar el personaje (WASD o las flechas)
         x = Input.GetAxis("Horizontal");
         z = Input.GetAxis("Vertical");
 #endif
 
         Vector3 move = transform.right * x + transform.forward * z;
 
-        // Llamado del metodo para saltar
         JumpCheck();
-
-        // Llamado del metodo para correr
         RunCheck(x, z);
 
-        // Si el jugador esta en el aire, moverse de acuerdo a la ultima entrada
         if (!isGrounded)
         {
             characterController.Move(moveInAir * speed * Time.deltaTime * sprintSpeed);
         }
-        // Caso contrario, obtener la ultima entrada para moverse en el aire, pero el jugador seguira moviendose normalmente en el suelo
         else
         {
             moveInAir = move;
             characterController.Move(move * speed * Time.deltaTime * sprintSpeed);
         }
 
-        // Aumento de la velocidad de caida si cae desde un punto mas alto.
         velocity.y += gravity * Time.deltaTime;
         characterController.Move(velocity * Time.deltaTime);
-
     }
 
-    // Metodo para ser llamado desde un boton de UI en movil
     public void PerformJump()
     {
         if (isGrounded && Time.time > nextJumpTime)
@@ -133,44 +121,41 @@ public class PlayerMovement : MonoBehaviour
 
     public void JumpCheck()
     {
-        // Programacion del salto para PC
-#if !UNITY_ANDROID && !UNITY_IOS
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            PerformJump();
-        }
-#elif UNITY_EDITOR
-        if (forceMobileControlsInEditor)
-        {
-            // En movil, el salto se maneja a traves del boton de UI que llama a PerformJump()
-            jumpButton.onButtonPressed += PerformJump;
-        }
-        else
+        bool isMobileForced = false;
+        #if UNITY_EDITOR
+            isMobileForced = forceMobileControlsInEditor;
+        #endif
+
+        // Programacion del salto para PC (solo si no estamos en modo movil)
+        if (!Application.isMobilePlatform && !isMobileForced)
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 PerformJump();
             }
         }
-#else
-        // En movil, el salto se maneja a traves del boton de UI que llama a PerformJump()
-        jumpButton.onButtonPressed += PerformJump;
-        
-#endif
     }
 
     public void RunCheck(float x, float z)
     {
         bool isMoving = (x != 0 || z != 0);
+        bool wantsToSprint = false;
 
-#if UNITY_ANDROID || UNITY_IOS
-        // En movil, el sprint podria ser un boton aparte o basado en la magnitud del joystick.
-        // Por ahora, lo dejaremos simple y asumimos que no hay sprint en movil a menos que agregues un boton.
-        // Para este ejemplo, el sprint solo funcionara con teclado.
-        bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && isMoving;
-#else
-        bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && isMoving;
-#endif
+        bool isMobileForced = false;
+        #if UNITY_EDITOR
+            isMobileForced = forceMobileControlsInEditor;
+        #endif
+
+        if ((Application.isMobilePlatform || isMobileForced))
+        {
+            // Logica para movil (o forzado en editor)
+            wantsToSprint = isSprintingButtonPressed && isMoving;
+        }
+        else
+        {
+            // Logica para PC
+            wantsToSprint = Input.GetKey(KeyCode.LeftShift) && isMoving;
+        }
 
         bool canSprint = staminaSlider.IsStaminaAvailable();
 
@@ -189,8 +174,19 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            // Velocidad normal
             sprintSpeed = 1;
         }
     }
+
+    // ======== Metodos para el boton de Correr (movil) ========
+    public void StartSprinting()
+    {
+        isSprintingButtonPressed = true;
+    }
+
+    public void StopSprinting()
+    {
+        isSprintingButtonPressed = false;
+    }
+    // ==========================================================
 }
