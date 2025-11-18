@@ -28,11 +28,23 @@ public class PlayerMovement : MonoBehaviour
     public float staminaUseAmount = 5;
     private StaminaBar staminaSlider;
 
+    // ======== Controles Moviles ========
+    [Header("Mobile Controls")]
+    public GameObject mobileControls;
+    public VirtualJoystick virtualJoystick;
+    // ====================================
+
     // Inicializar la barra de stamina
     private void Start()
     {
         // FindObjectOfType (original)
         staminaSlider = FindFirstObjectByType<StaminaBar>();
+
+#if UNITY_ANDROID || UNITY_IOS
+        mobileControls.SetActive(true);
+#else
+        mobileControls.SetActive(false);
+#endif
     }
 
     Vector3 velocity;
@@ -52,9 +64,18 @@ public class PlayerMovement : MonoBehaviour
             velocity.y = -2f;
         }
 
+        float x;
+        float z;
+
+#if UNITY_ANDROID || UNITY_IOS
+        // Capturar los valores del joystick virtual para desplazar el personaje
+        x = virtualJoystick.direction.x;
+        z = virtualJoystick.direction.y;
+#else
         // Capturar los botones de teclado para desplazar el personaje (WASD o las flechas)
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+        x = Input.GetAxis("Horizontal");
+        z = Input.GetAxis("Vertical");
+#endif
 
         Vector3 move = transform.right * x + transform.forward * z;
 
@@ -62,7 +83,7 @@ public class PlayerMovement : MonoBehaviour
         JumpCheck();
 
         // Llamado del metodo para correr
-        RunCheck();
+        RunCheck(x, z);
 
         // Si el jugador esta en el aire, moverse de acuerdo a la ultima entrada
         if (!isGrounded)
@@ -82,24 +103,40 @@ public class PlayerMovement : MonoBehaviour
 
     }
 
-    public void JumpCheck()
+    // Metodo para ser llamado desde un boton de UI en movil
+    public void PerformJump()
     {
-        // Programacion del salto
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && Time.time > nextJumpTime)
+        if (isGrounded && Time.time > nextJumpTime)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
             nextJumpTime = Time.time + jumpCooldown;
         }
     }
 
-    public void RunCheck()
+    public void JumpCheck()
     {
-        // Capturar el movimiento horizontal/vertical para saber si el jugador realmente se mueve
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+        // Programacion del salto para PC
+#if !UNITY_ANDROID && !UNITY_IOS
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            PerformJump();
+        }
+#endif
+    }
 
+    public void RunCheck(float x, float z)
+    {
         bool isMoving = (x != 0 || z != 0);
+
+#if UNITY_ANDROID || UNITY_IOS
+        // En movil, el sprint podria ser un boton aparte o basado en la magnitud del joystick.
+        // Por ahora, lo dejaremos simple y asumimos que no hay sprint en movil a menos que agregues un boton.
+        // Para este ejemplo, el sprint solo funcionara con teclado.
         bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && isMoving;
+#else
+        bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && isMoving;
+#endif
+
         bool canSprint = staminaSlider.IsStaminaAvailable();
 
         if (wantsToSprint && canSprint)
@@ -121,5 +158,4 @@ public class PlayerMovement : MonoBehaviour
             sprintSpeed = 1;
         }
     }
-
 }
