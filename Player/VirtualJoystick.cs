@@ -64,6 +64,7 @@ public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, I
     {
         // Al tocar, simplemente llamamos a OnDrag para empezar a calcular la posición.
         OnDrag(eventData);
+        Debug.Log("Moviendose...");
     }
 
     /// <summary>
