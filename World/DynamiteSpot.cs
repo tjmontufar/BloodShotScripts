@@ -3,70 +3,72 @@ using UnityEngine;
 
 public class DynamiteSpot : MonoBehaviour
 {
-    [Header("Referencias")]
+    [Header("Referencias de Escena")]
     public GameObject wallToDestroy;
     public GameObject hiddenCrystals;
-    public GameObject promptUI;
-
-    [Header("Condición")]
-    // El jugador debe eliminar 15 enemigos para poder colocar una dinamita
-    public int requiredKills = 15;
-
-    [Header("Explosión")]
-    public float timeToExplode = 3.0f;
     public GameObject dynamitePrefab;
 
-    private bool playerIsNearby = false;
-    private bool isCountingDown = false;
+    [Header("UI (Arrastra los objetos)")]
+    public GameObject promptTextPC;
+    public GameObject placeDynamiteButtonMobile;
+
+    [Header("Condicion")]
+    public int requiredKills = 15;
+
+    [Header("Explosion")]
+    public float timeToExplode = 3.0f;
 
     [Header("Sonido")]
     public AudioClip explosionAudioClip;
-    //public AudioSource audioSource;
+
+    private bool playerIsNearby = false;
+    private bool requirementsMet = false;
+    private bool isCountingDown = false;
+    private PlayerMovement playerMovement; // Referencia para saber el contexto
 
     void Start()
     {
+        playerMovement = FindObjectOfType<PlayerMovement>();
+
         if (hiddenCrystals != null)
         {
             hiddenCrystals.SetActive(false);
         }
-
-        if (promptUI != null)
-        {
-            promptUI.SetActive(false);
-        }
+        HidePrompts();
     }
 
     void Update()
     {
         if (playerIsNearby && !isCountingDown)
         {
+            // Comprobar si se cumplen los requisitos
             LevelManager levelManager = FindObjectOfType<LevelManager>();
+            requirementsMet = (levelManager != null && levelManager.EnemyKillCount >= requiredKills);
 
-            if (levelManager != null && levelManager.EnemyKillCount >= requiredKills)
+            if (requirementsMet)
             {
-                if (promptUI != null)
-                {
-                    promptUI.SetActive(true);
-                }
+                ShowCorrectPrompt();
 
-                if (Input.GetKeyDown(KeyCode.E))
+                // Logica para PC: presionar la tecla 'E'
+                if (!IsMobileContext() && Input.GetKeyDown(KeyCode.E))
                 {
-                    if (promptUI != null)
-                    {
-                        promptUI.SetActive(false);
-                    }
-
-                    //DestroyWall();
-                    StartCoroutine(DestroyWallSequence());
+                    PlaceDynamite();
                 }
             }
             else
             {
-                if (promptUI != null)
-                {
-                    promptUI.SetActive(false);
-                }
+                HidePrompts();
             }
+        }
+    }
+
+    // Este metodo es publico para ser llamado por el boton de la UI en movil
+    public void PlaceDynamite()
+    {
+        if (requirementsMet && !isCountingDown)
+        {
+            HidePrompts();
+            StartCoroutine(DestroyWallSequence());
         }
     }
 
@@ -83,70 +85,85 @@ public class DynamiteSpot : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerIsNearby = false;
-            // Ocultar el prompt UI al salir
-            if (promptUI != null) promptUI.SetActive(false);
+            requirementsMet = false;
+            HidePrompts();
         }
+    }
+
+    private void ShowCorrectPrompt()
+    {
+        if (IsMobileContext())
+        {
+            if (promptTextPC != null) promptTextPC.SetActive(false);
+            if (placeDynamiteButtonMobile != null) placeDynamiteButtonMobile.SetActive(true);
+        }
+        else
+        {
+            if (promptTextPC != null) promptTextPC.SetActive(true);
+            if (placeDynamiteButtonMobile != null) placeDynamiteButtonMobile.SetActive(false);
+        }
+    }
+
+    private void HidePrompts()
+    {
+        if (promptTextPC != null) promptTextPC.SetActive(false);
+        if (placeDynamiteButtonMobile != null) placeDynamiteButtonMobile.SetActive(false);
+    }
+
+    private bool IsMobileContext()
+    {
+        bool context = Application.isMobilePlatform;
+#if UNITY_EDITOR
+        if (playerMovement != null && playerMovement.forceMobileControlsInEditor)
+        {
+            context = true;
+        }
+#endif
+        return context;
     }
 
     private IEnumerator DestroyWallSequence()
     {
         isCountingDown = true;
-
         GameObject placedDynamite = null;
 
-        // Instanciar la dinamita en el punto de interaccion
         if (dynamitePrefab != null)
         {
             Quaternion targetRotation = Quaternion.Euler(0, -45f, 0);
-
             placedDynamite = Instantiate(dynamitePrefab, transform.position, targetRotation);
-
         }
-
-        Debug.Log("Dinamita colocada. Explosión en " + timeToExplode + " segundos...");
 
         yield return new WaitForSeconds(timeToExplode);
 
-        // Reproducir sonido de explosion
         if (explosionAudioClip != null)
         {
-            // GameObject temporal para el sonido
             GameObject audioObject = new GameObject("ExplosionSound");
             audioObject.transform.position = transform.position;
-
             AudioSource tempAudioSource = audioObject.AddComponent<AudioSource>();
             tempAudioSource.clip = explosionAudioClip;
-            tempAudioSource.outputAudioMixerGroup = null;
-            tempAudioSource.volume = 1f;
-
             tempAudioSource.Play();
-
             Destroy(audioObject, explosionAudioClip.length);
         }
 
-        // Destruir la pared
         if (wallToDestroy != null)
         {
             Destroy(wallToDestroy);
-
-            Debug.Log("Destruyendo pared.");
-            QuestManager.Instance.DynamiteActionCompleted();
+            if (QuestManager.Instance != null)
+            {
+                QuestManager.Instance.DynamiteActionCompleted();
+            }
         }
 
-        // Eliminar la dinamita despues de detonar
         if (placedDynamite != null)
         {
             Destroy(placedDynamite);
-            Debug.Log("Eliminando dinamita...");
         }
 
-        // Liberar los cristales
         if (hiddenCrystals != null)
         {
             hiddenCrystals.SetActive(true);
         }
 
-        // Eliminar el objeto DynamiteSpot
         isCountingDown = false;
         Destroy(gameObject);
     }
