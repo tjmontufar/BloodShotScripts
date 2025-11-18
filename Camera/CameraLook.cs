@@ -36,8 +36,8 @@ public class CameraLook : MonoBehaviour
 
     void Update()
     {
-        float mouseX;
-        float mouseY;
+        float lookX = 0;
+        float lookY = 0;
 
         bool isMobileForced = false;
         #if UNITY_EDITOR
@@ -50,42 +50,35 @@ public class CameraLook : MonoBehaviour
         // --- Logica para Movil ---
         if (Application.isMobilePlatform || isMobileForced)
         {
-            if (Input.touchCount > 0)
+            // Iterar a traves de todos los toques en la pantalla
+            foreach (Touch touch in Input.touches)
             {
-                Touch touch = Input.GetTouch(0);
-
-                // Si el dedo se mueve y NO esta sobre un objeto de la UI (botones, joystick, etc.)
-                if (touch.phase == TouchPhase.Moved && !EventSystem.current.IsPointerOverGameObject(touch.fingerId))
+                // Si el toque NO esta sobre un elemento de la UI (joystick, boton, etc.)
+                if (!EventSystem.current.IsPointerOverGameObject(touch.fingerId))
                 {
-                    mouseX = touch.deltaPosition.x * touchSensitivity * Time.deltaTime;
-                    mouseY = touch.deltaPosition.y * touchSensitivity * Time.deltaTime;
+                    // Si el dedo se esta moviendo, ese es nuestro toque para mirar
+                    if (touch.phase == TouchPhase.Moved)
+                    {
+                        lookX = touch.deltaPosition.x * touchSensitivity * Time.deltaTime;
+                        lookY = touch.deltaPosition.y * touchSensitivity * Time.deltaTime;
+                        // Rompemos el bucle porque ya encontramos el toque para mirar
+                        break;
+                    }
                 }
-                else
-                {
-                    // No mover la camara si no se arrastra el dedo o si esta sobre la UI
-                    mouseX = 0;
-                    mouseY = 0;
-                }
-            }
-            else
-            {
-                // No hay toques en la pantalla
-                mouseX = 0;
-                mouseY = 0;
             }
         }
         // --- Logica para PC ---
         else
         {
-            mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-            mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+            lookX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+            lookY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
         }
 
         // --- Rotacion (comun para ambas plataformas) ---
-        xRotation -= mouseY;
+        xRotation -= lookY;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
         transform.localRotation = Quaternion.Euler(xRotation, 0, 0);
-        playerBody.Rotate(Vector3.up * mouseX);
+        playerBody.Rotate(Vector3.up * lookX);
     }
 }
