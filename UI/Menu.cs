@@ -6,32 +6,44 @@ public enum ConfirmationAction { None, RestartLevel, QuitToMenu }
 
 public class Menu : MonoBehaviour
 {
+    [Header("Referencias de Paneles")]
     public GameObject pausePanel;
     public GameObject optionsPanel;
     public GameObject menuPausePanel;
     public GameObject confirmExitPanel;
 
-    private bool isGamePaused = false;
-    private ConfirmationAction pendingAction = ConfirmationAction.None;
-
+    [Header("Referencias de Logica")]
     public SceneLoader sceneLoader;
     public TextMeshProUGUI ConfirmationTextPanel;
+    public CameraLook cameraLook; // Para solucionar el bug de la camara
+    public PlayerMovement playerMovement; // Para saber si se fuerza el modo movil
 
     [Header("Audio Mixer Snapshots")]
     public AudioMixer mainMixer;
-    public AudioMixerSnapshot unpausedSnapshot; // Arrastra el Snapshot 'Unpaused' aquí
-    public AudioMixerSnapshot pausedSnapshot;   // Arrastra el Snapshot 'Paused' aquí
+    public AudioMixerSnapshot unpausedSnapshot;
+    public AudioMixerSnapshot pausedSnapshot;
 
+    private bool isGamePaused = false;
+    private ConfirmationAction pendingAction = ConfirmationAction.None;
     private const float transitionTime = 0.0f;
 
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
+        // El juego siempre empieza sin pausa
+        isGamePaused = false;
+        Time.timeScale = 1f;
         pausePanel.SetActive(false);
+        if (cameraLook != null)
+        {
+            cameraLook.enabled = true;
+        }
 
-        // Establecer volumen normal al iniciar el nivel
+        // Configurar el cursor y el audio para el estado inicial
+        if (!IsMobileContext())
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
         if (unpausedSnapshot != null)
         {
             unpausedSnapshot.TransitionTo(transitionTime);
@@ -40,16 +52,23 @@ public class Menu : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.P))
+        // Solo permitir pausar con la tecla 'Escape' en contexto de PC
+        if (!IsMobileContext() && Input.GetKeyDown(KeyCode.Escape))
         {
-            if(isGamePaused)
-            {
-                ResumeGame();
-            }
-            else
-            {
-                PauseGame();
-            }  
+            TogglePause();
+        }
+    }
+    
+    // Este es el metodo principal que deben llamar los botones de UI para pausar/reanudar
+    public void TogglePause()
+    {
+        if (isGamePaused)
+        {
+            ResumeGame();
+        }
+        else
+        {
+            PauseGame();
         }
     }
 
@@ -57,49 +76,78 @@ public class Menu : MonoBehaviour
     {
         isGamePaused = true;
         Time.timeScale = 0f;
+        pausePanel.SetActive(true);
 
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        // Silenciar efectos de sonido
+        // Desactivar el script de la camara para evitar conflictos
+        if (cameraLook != null)
+        {
+            cameraLook.enabled = false;
+        }
+        
+        // Logica de audio
         if (pausedSnapshot != null)
         {
-            // Transiciona al Snapshot que tiene el volumen de SFX bajado a -80dB
             pausedSnapshot.TransitionTo(transitionTime);
-            Debug.Log("Transicionando a estado Pausado (Audio Silenciado).");
         }
-
-        pausePanel.SetActive(true);
+        
+        // Logica del cursor solo para PC
+        if (!IsMobileContext())
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     public void ResumeGame()
     {
-        // Restaurar sonidos
+        isGamePaused = false;
+        Time.timeScale = 1f;
+        
+        // Es importante que el panel se desactive ANTES de reanudar la camara
+        // para que no haya conflicto en el primer frame.
+        pausePanel.SetActive(false);
+
+        // Reactivar el script de la camara
+        if (cameraLook != null)
+        {
+            cameraLook.enabled = true;
+        }
+        
+        // Logica de audio
         if (unpausedSnapshot != null)
         {
-            // Transiciona de vuelta al Snapshot normal, restaurando los volúmenes configurados por el usuario.
             unpausedSnapshot.TransitionTo(transitionTime);
-            Debug.Log("Transicionando a estado Normal (Audio Restaurado).");
         }
 
         ButtonHover.ResetAllHovers();
-
-        isGamePaused = false;
-        Time.timeScale = 1f;
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
-        pausePanel.SetActive(false);
+        
+        // Logica del cursor solo para PC
+        if (!IsMobileContext())
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
+    // Metodo de ayuda para saber si estamos en movil o forzando el modo movil en el editor
+    private bool IsMobileContext()
+    {
+        bool context = Application.isMobilePlatform;
+#if UNITY_EDITOR
+        if (playerMovement != null && playerMovement.forceMobileControlsInEditor)
+        {
+            context = true;
+        }
+#endif
+        return context;
+    }
+
+    #region Manejo de Paneles Adicionales
     public void OpenOptionsPanel()
     {
         ButtonHover.ResetAllHovers();
-
         menuPausePanel.SetActive(false);
         optionsPanel.SetActive(true);
-
         if (pausedSnapshot != null)
         {
             pausedSnapshot.TransitionTo(transitionTime);
@@ -109,11 +157,9 @@ public class Menu : MonoBehaviour
     public void openMenuPausePanel()
     {
         ButtonHover.ResetAllHovers();
-
         optionsPanel.SetActive(false);
         confirmExitPanel.SetActive(false);
         menuPausePanel.SetActive(true);
-
         if (pausedSnapshot != null)
         {
             pausedSnapshot.TransitionTo(transitionTime);
@@ -123,13 +169,13 @@ public class Menu : MonoBehaviour
     public void AskToRestart()
     {
         pendingAction = ConfirmationAction.RestartLevel;
-        OpenConfirmPanel("¿SEGURO QUE QUIERES REINICIAR EL NIVEL?");
+        OpenConfirmPanel("Â¿SEGURO QUE QUIERES REINICIAR EL NIVEL?");
     }
 
     public void AskToQuit()
     {
         pendingAction = ConfirmationAction.QuitToMenu;
-        OpenConfirmPanel("¿SEGURO QUE QUIERES VOLVER AL MENÚ?");
+        OpenConfirmPanel("Â¿SEGURO QUE QUIERES VOLVER AL MENÃš?");
     }
 
     public void OpenConfirmPanel(string askText)
@@ -153,18 +199,15 @@ public class Menu : MonoBehaviour
             case ConfirmationAction.RestartLevel:
                 sceneLoader.RestartLevel();
                 break;
-
             case ConfirmationAction.QuitToMenu:
                 sceneLoader.GoToMainMenu();
                 break;
-
             case ConfirmationAction.None:
             default:
-                Debug.LogWarning("Confirmación pulsada sin acción pendiente. Revisa la UI.");
                 CancelConfirmation();
                 break;
         }
-
         pendingAction = ConfirmationAction.None;
     }
+    #endregion
 }
