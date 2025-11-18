@@ -7,12 +7,13 @@ public class PauseManager : MonoBehaviour
 
     [Header("Referencias")]
     public GameObject pauseMenuUI;
+    public CameraLook cameraLook;       // Para apagar/encender la camara
+    public PlayerMovement playerMovement; // Para saber si se fuerza el modo movil
 
     private bool isPaused = false;
 
     private void Awake()
     {
-        // --- Patron Singleton ---
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -20,9 +21,7 @@ public class PauseManager : MonoBehaviour
         else
         {
             Instance = this;
-            // Opcional: DontDestroyOnLoad(gameObject); si quieres que persista entre escenas
         }
-        // -------------------------
     }
 
     private void Start()
@@ -34,22 +33,28 @@ public class PauseManager : MonoBehaviour
         {
             pauseMenuUI.SetActive(false);
         }
+        if (cameraLook != null)
+        {
+            cameraLook.enabled = true;
+        }
     }
 
     private void Update()
     {
+        // Determinar si estamos en un contexto de PC o no
+        bool isMobileContext = IsMobileContext();
+
         // --- Input para Pausa en PC (tecla Escape) ---
-#if !UNITY_ANDROID && !UNITY_IOS
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (!isMobileContext && Input.GetKeyDown(KeyCode.Escape))
         {
             TogglePause();
         }
-#endif
     }
 
     public void TogglePause()
     {
         isPaused = !isPaused;
+        bool isMobileContext = IsMobileContext();
 
         if (isPaused)
         {
@@ -59,12 +64,17 @@ public class PauseManager : MonoBehaviour
             {
                 pauseMenuUI.SetActive(true);
             }
+            if (cameraLook != null)
+            {
+                cameraLook.enabled = false;
+            }
 
-            // Desbloquear el cursor para poder interactuar con el menu en PC
-#if !UNITY_ANDROID && !UNITY_IOS
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-#endif
+            // Desbloquear el cursor solo en contexto de PC
+            if (!isMobileContext)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
         }
         else
         {
@@ -74,12 +84,30 @@ public class PauseManager : MonoBehaviour
             {
                 pauseMenuUI.SetActive(false);
             }
+            if (cameraLook != null)
+            {
+                cameraLook.enabled = true;
+            }
 
-            // Bloquear el cursor de nuevo para el modo de juego en PC
-#if !UNITY_ANDROID && !UNITY_IOS
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-#endif
+            // Bloquear el cursor de nuevo solo en contexto de PC
+            if (!isMobileContext)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
+    }
+
+    // Metodo de ayuda para saber si estamos en movil o forzando el modo movil
+    private bool IsMobileContext()
+    {
+        bool context = Application.isMobilePlatform;
+#if UNITY_EDITOR
+        if (playerMovement != null && playerMovement.forceMobileControlsInEditor)
+        {
+            context = true;
+        }
+#endif
+        return context;
     }
 }
