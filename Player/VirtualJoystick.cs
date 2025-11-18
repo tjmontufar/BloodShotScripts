@@ -1,86 +1,70 @@
 using UnityEngine;
-using UnityEngine.EventSystems; // Necesario para la interfaz de Eventos de UI
+using UnityEngine.EventSystems;
 
-// Implementa interfaces necesarias para manejo de toque/arrastre
+// Implementa las interfaces para detectar eventos de la UI (tocar, arrastrar, levantar)
 public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, IPointerDownHandler
 {
-    // Variables públicas para el acceso desde el script de Movimiento del Jugador
-    [HideInInspector] public Vector2 direction;
+    [HideInInspector]
+    public Vector2 direction; // La direccion del joystick, para que la lea el PlayerMovement
 
     [Header("Referencias")]
-    // La imagen de fondo del joystick (el círculo base)
-    [SerializeField] private RectTransform background;
-    // La imagen del 'dedo' o stick que se mueve
-    [SerializeField] private RectTransform handle;
+    [SerializeField] private RectTransform background; // La imagen de fondo del joystick
+    [SerializeField] private RectTransform handle;     // La imagen del punto central que se mueve
 
-    // Radio máximo de movimiento (para que el stick no se salga del fondo)
     private float joystickRadius;
+    private bool isBeingTouched = false; // Un flag para saber si el joystick esta siendo usado
 
     private void Start()
     {
-        // Se calcula el radio del joystick como la mitad del ancho del fondo
         joystickRadius = background.sizeDelta.x / 2;
-
-        // Asegúrate de que el joystick se inicialice en el centro
-        ResetHandlePosition();
+        ResetJoystick();
     }
 
-    /// <summary>
-    /// Llamado cuando el dedo toca y arrastra sobre el área del Joystick.
-    /// </summary>
-    public void OnDrag(PointerEventData eventData)
+    private void Update()
     {
-        Vector2 position = Vector2.zero;
-
-        // Intentar convertir la posición de la pantalla a una posición local del RectTransform del fondo.
-        // Esto nos da la posición del toque relativa al centro del joystick.
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            background,
-            eventData.position,
-            eventData.pressEventCamera,
-            out position))
+        // --- Mecanismo de Seguridad ---
+        // Este bloque previene que el joystick se quede "pegado" despues de pausar.
+        // Si no hay ningun dedo en la pantalla y el joystick cree que sigue presionado, lo reseteamos.
+        if (Application.isMobilePlatform && Input.touchCount == 0 && isBeingTouched)
         {
-            // Normalizar la posición (hacerla de -1 a 1) dividiendo por el radio.
-            Vector2 rawDirection = position / joystickRadius;
-
-            // Si la dirección es mayor a 1 (el dedo se salió del círculo), la limitamos.
-            if (rawDirection.magnitude > 1)
-            {
-                rawDirection = rawDirection.normalized; // Mantenemos la dirección, pero la magnitud a 1
-            }
-
-            // Aplicamos la dirección al Handle (la imagen que se mueve)
-            handle.anchoredPosition = rawDirection * joystickRadius;
-
-            // Almacenamos la dirección normalizada (de -1 a 1) para el script de movimiento del jugador
-            direction = rawDirection;
+            // Forzar el reseteo
+            OnPointerUp(null);
         }
     }
 
-    /// <summary>
-    /// Llamado cuando el dedo toca por primera vez el Joystick.
-    /// </summary>
+    // Se llama cuando el dedo se arrastra sobre el joystick
+    public void OnDrag(PointerEventData eventData)
+    {
+        Vector2 position;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(background, eventData.position, eventData.pressEventCamera, out position))
+        {
+            // Calcular la direccion y limitarla al radio del joystick
+            Vector2 rawDirection = position / joystickRadius;
+            direction = (rawDirection.magnitude > 1) ? rawDirection.normalized : rawDirection;
+
+            // Mover el handle visualmente
+            handle.anchoredPosition = direction * joystickRadius;
+        }
+    }
+
+    // Se llama la primera vez que el dedo toca el joystick
     public void OnPointerDown(PointerEventData eventData)
     {
-        // Al tocar, simplemente llamamos a OnDrag para empezar a calcular la posición.
-        OnDrag(eventData);
+        isBeingTouched = true; // Marcamos que esta siendo usado
+        OnDrag(eventData);     // Ejecutamos la logica de arrastre para que responda al primer toque
     }
 
-    /// <summary>
-    /// Llamado cuando el dedo se levanta del Joystick.
-    /// </summary>
+    // Se llama cuando el dedo se levanta del joystick
     public void OnPointerUp(PointerEventData eventData)
     {
-        // Restablecemos la dirección a cero
-        direction = Vector2.zero;
-
-        // Devolvemos el Handle a la posición central
-        ResetHandlePosition();
+        isBeingTouched = false; // Marcamos que ya no se esta usando
+        ResetJoystick();
     }
 
-    private void ResetHandlePosition()
+    // Metodo para resetear la posicion y direccion del joystick
+    private void ResetJoystick()
     {
-        // Centrar el stick
+        direction = Vector2.zero;
         handle.anchoredPosition = Vector2.zero;
     }
 }
